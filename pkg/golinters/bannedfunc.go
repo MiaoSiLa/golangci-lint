@@ -11,7 +11,7 @@ import (
 func NewCheckTimeNow() *goanalysis.Linter {
 	return goanalysis.NewLinter(
 		"bannedfunc",
-		"Checks that  cannot use func",
+		"Checks that cannot use func",
 		[]*analysis.Analyzer{Analyzer},
 		nil,
 	).WithLoadMode(goanalysis.LoadModeSyntax)

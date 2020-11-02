@@ -326,7 +326,7 @@ func (m Manager) GetAllSupportedLinterConfigs() []*linter.Config {
 			WithURL("https://github.com/polyfloyd/go-errorlint"),
 		linter.NewConfig(golinters.NewCheckTimeNow()).
 			WithPresets(linter.PresetStyle),
-			
+
 		// nolintlint must be last because it looks at the results of all the previous linters for unused nolint directives
 		linter.NewConfig(golinters.NewNoLintLint()).
 			WithPresets(linter.PresetStyle).
