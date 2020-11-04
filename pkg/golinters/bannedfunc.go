@@ -2,11 +2,15 @@ package golinters
 
 import (
 	"go/ast"
+	"io/ioutil"
+	"os"
+	"strings"
 
 	"github.com/golangci/golangci-lint/pkg/golinters/goanalysis"
 	"github.com/golangci/golangci-lint/pkg/lint/linter"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
+	"gopkg.in/yaml.v3"
 )
 
 // Configuration represents go-header linter setup parameters
@@ -21,12 +25,14 @@ var Analyzer = &analysis.Analyzer{
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 }
 
-func checkFirstLetter(s string) (string, bool) {
-	if len(s) < 2 || s[0] != '~' || s[1] < 97 || s[1] > 122 {
-		return "", false
-	}
-	return string(s[1]-32) + s[2:], true
+type configSetting struct {
+	LinterSettings BandFunc `yaml:"linters-settings"`
 }
+
+type BandFunc struct {
+	Funcs map[string]string `yaml:"bannedfunc,flow"`
+}
+
 func NewCheckTimeNow() *goanalysis.Linter {
 	return goanalysis.NewLinter(
 		"bannedfunc",
@@ -34,25 +40,44 @@ func NewCheckTimeNow() *goanalysis.Linter {
 		[]*analysis.Analyzer{Analyzer},
 		nil,
 	).WithContextSetter(func(lintCtx *linter.Context) {
-		cfg := lintCtx.Cfg.LintersSettings.BannedFunc
-		for k, v := range cfg.Values {
-			for itemK, item := range v {
-				if s, ok := checkFirstLetter(itemK); ok {
-					v[s] = item
-					delete(v, itemK)
-				}
-			}
-			if s, ok := checkFirstLetter(k); ok {
-				delete(cfg.Values, k)
-				k = s
-			}
-			cfg.Values[k] = v
+
+		wd, _ := os.Getwd()
+		f, err := ioutil.ReadFile(wd + "/.golangci.yml")
+		if err != nil {
+			panic(err)
 		}
-		c := &Configuration{
-			Values: cfg.Values,
+		var config configSetting
+		err = yaml.Unmarshal(f, &config)
+		if err != nil {
+			panic(err)
+		}
+		configMap := make(map[string]map[string]string)
+		for k, v := range config.LinterSettings.Funcs {
+			strs := strings.Split(k, ")")
+			if len(strs) != 2 {
+				continue
+			}
+			if strs[0][0] != '(' || strs[1][0] != '.' {
+				continue
+			}
+			var pkg, name = strs[0][1:], strs[1][1:]
+			m := configMap[pkg]
+			if m == nil {
+				m = make(map[string]string)
+			}
+			m[name] = v
+			configMap[pkg] = m
 		}
 
 		Analyzer.Run = func(pass *analysis.Pass) (interface{}, error) {
+			useMap:=make(map[string]map[string]string)
+			for _,item:=range pass.Pkg.Imports(){
+				if m,ok := configMap[item.Path()];ok{
+
+					useMap[item.Name()]=make(map[string]string)
+					useMap[item.Name()] = m
+				}
+			}
 			astf := func(node ast.Node) bool {
 				selector, ok := node.(*ast.SelectorExpr)
 				if !ok {
@@ -64,7 +89,7 @@ func NewCheckTimeNow() *goanalysis.Linter {
 					return true
 				}
 
-				m, ok := c.Values[ident.Name]
+				m, ok := useMap[ident.Name]
 				if !ok {
 					return true
 				}

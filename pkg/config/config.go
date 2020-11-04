@@ -250,14 +250,11 @@ type LintersSettings struct {
 	Exhaustive  ExhaustiveSettings
 	Gofumpt     GofumptSettings
 	ErrorLint   ErrorLintSettings
-	BannedFunc  BannedFuncSettings
 
 	Custom map[string]CustomLinterSettings
 }
 
-type BannedFuncSettings struct {
-	Values map[string]map[string]string `mapstructure:"func"`
-}
+
 
 type GoHeaderSettings struct {
 	Values       map[string]map[string]string `mapstructure:"values"`
