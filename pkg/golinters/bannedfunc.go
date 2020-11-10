@@ -79,6 +79,7 @@ func astFunc(pass *analysis.Pass, useMap map[string]map[string]string) func(node
 }
 
 // configToConfigMap 将配置文件转成 map
+// map[包名]map[函数名]错误提示
 // example:
 // map:{
 //   time: {
@@ -124,6 +125,7 @@ func loadConfigFile() configSetting {
 }
 
 // getUsedMap 将配置文件的 map 转成文件下实际变量名的 map
+// map[包的别名]map[函数名]错误提示
 // example:
 // map:{
 //   time: {
