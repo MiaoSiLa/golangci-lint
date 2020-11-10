@@ -33,7 +33,7 @@ type BandFunc struct {
 	Funcs map[string]string `yaml:"bannedfunc,flow"`
 }
 
-func NewCheckTimeNow() *goanalysis.Linter {
+func NewCheckBannedFunc() *goanalysis.Linter {
 	return goanalysis.NewLinter(
 		"bannedfunc",
 		"Checks that cannot use func",
