@@ -10,7 +10,7 @@ import (
 	"github.com/golangci/golangci-lint/pkg/lint/linter"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
-	"gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v2"
 )
 
 // Configuration represents go-header linter setup parameters
@@ -46,10 +46,28 @@ func linterCtx(lintCtx *linter.Context) {
 	// 读取配置文件
 	config := loadConfigFile()
 	// 将配置文件转成 map
+	// example:
+	// map:{
+	// 	 time: {
+	//	   Now: 不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()
+	// 	 }
+	//   github.com/Missevan/missevan-go/util/time: {
+	//     TimeNow: xxxxxx
+	//   }
+	// }
 	configMap := configToConfigMap(config)
 
 	Analyzer.Run = func(pass *analysis.Pass) (interface{}, error) {
-		// 将配置文件的 map 转成便于 AST 解析的 map
+		// 将配置文件的 map 转成文件下实际变量名的 map
+		// example:
+		// map:{
+		// 	 time: {
+		//	   Now: 不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()
+		// 	 }
+		//   util: {
+		//     TimeNow: xxxxxx
+		//   }
+		// }
 		useMap := getUseMap(pass, configMap)
 		for _, f := range pass.Files {
 			ast.Inspect(f, astFunc(pass, useMap))
