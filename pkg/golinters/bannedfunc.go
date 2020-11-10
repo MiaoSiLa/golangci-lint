@@ -81,12 +81,14 @@ func astFunc(pass *analysis.Pass, usedMap map[string]map[string]string) func(nod
 // configToConfigMap 将配置文件转成 map
 // map[包名]map[函数名]错误提示
 // example:
-// map:{
+// {
 //   time: {
 //     Now: 不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()
-//   }
+//     Date: xxxx
+//   },
 //   github.com/Missevan/missevan-go/util/time: {
 //     TimeNow: xxxxxx
+//     SetTimeNow: xxxxx
 //   }
 // }
 func configToConfigMap(config configSetting) map[string]map[string]string {
@@ -96,10 +98,13 @@ func configToConfigMap(config configSetting) map[string]map[string]string {
 		if len(strs) != 2 {
 			continue
 		}
-		if strs[0][0] != '(' {
+		if len(strs[0]) <= 1 || strs[0][0] != '(' {
 			continue
 		}
-		var pkg, name = strs[0][1:], strs[1]
+		pkg, name := strs[0][1:], strs[1]
+		if name == "" {
+			continue
+		}
 		m := configMap[pkg]
 		if m == nil {
 			m = make(map[string]string)
@@ -131,12 +136,14 @@ func decodeFile(b []byte) configSetting {
 // getUsedMap 将配置文件的 map 转成文件下实际变量名的 map
 // map[包的别名]map[函数名]错误提示
 // example:
-// map:{
+// {
 //   time: {
 //     Now: 不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()
-//   }
+//     Date: xxxx
+//   },
 //   util: {
 //     TimeNow: xxxxxx
+//     SetTimeNow: xxxxx
 //   }
 // }
 func getUsedMap(pass *analysis.Pass, configMap map[string]map[string]string) map[string]map[string]string {
