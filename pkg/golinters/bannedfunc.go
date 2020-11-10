@@ -43,44 +43,14 @@ func NewCheckTimeNow() *goanalysis.Linter {
 }
 
 func linterCtx(lintCtx *linter.Context) {
-
-	wd, _ := os.Getwd()
-	f, err := ioutil.ReadFile(wd + "/.golangci.yml")
-	if err != nil {
-		panic(err)
-	}
-	var config configSetting
-	err = yaml.Unmarshal(f, &config)
-	if err != nil {
-		panic(err)
-	}
-	configMap := make(map[string]map[string]string)
-	for k, v := range config.LinterSettings.Funcs {
-		strs := strings.Split(k, ")")
-		if len(strs) != 2 {
-			continue
-		}
-		if strs[0][0] != '(' || strs[1][0] != '.' {
-			continue
-		}
-		var pkg, name = strs[0][1:], strs[1][1:]
-		m := configMap[pkg]
-		if m == nil {
-			m = make(map[string]string)
-		}
-		m[name] = v
-		configMap[pkg] = m
-	}
+	// 读取配置文件
+	config := loadConfigFile()
+	// 将配置文件转成 map
+	configMap := configToConfigMap(config)
 
 	Analyzer.Run = func(pass *analysis.Pass) (interface{}, error) {
-		useMap:=make(map[string]map[string]string)
-		for _,item:=range pass.Pkg.Imports(){
-			if m,ok := configMap[item.Path()];ok{
-
-				useMap[item.Name()]=make(map[string]string)
-				useMap[item.Name()] = m
-			}
-		}
+		// 将配置文件的 map 转成便于 AST 解析的 map
+		useMap := getUseMap(pass, configMap)
 		astf := func(node ast.Node) bool {
 			selector, ok := node.(*ast.SelectorExpr)
 			if !ok {
@@ -110,4 +80,50 @@ func linterCtx(lintCtx *linter.Context) {
 		}
 		return nil, nil
 	}
+}
+
+func configToConfigMap(config configSetting) map[string]map[string]string {
+	configMap := make(map[string]map[string]string)
+	for k, v := range config.LinterSettings.Funcs {
+		strs := strings.Split(k, ")")
+		if len(strs) != 2 {
+			continue
+		}
+		if strs[0][0] != '(' || strs[1][0] != '.' {
+			continue
+		}
+		var pkg, name = strs[0][1:], strs[1][1:]
+		m := configMap[pkg]
+		if m == nil {
+			m = make(map[string]string)
+		}
+		m[name] = v
+		configMap[pkg] = m
+	}
+	return configMap
+}
+
+func loadConfigFile() configSetting {
+	wd, _ := os.Getwd()
+	f, err := ioutil.ReadFile(wd + "/.golangci.yml")
+	if err != nil {
+		panic(err)
+	}
+	var config configSetting
+	err = yaml.Unmarshal(f, &config)
+	if err != nil {
+		panic(err)
+	}
+	return config
+}
+
+func getUseMap(pass *analysis.Pass, configMap map[string]map[string]string) map[string]map[string]string {
+	useMap := make(map[string]map[string]string)
+	for _, item := range pass.Pkg.Imports() {
+		if m, ok := configMap[item.Path()]; ok {
+			useMap[item.Name()] = make(map[string]string)
+			useMap[item.Name()] = m
+		}
+	}
+	return useMap
 }
