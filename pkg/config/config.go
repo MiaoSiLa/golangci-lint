@@ -254,8 +254,6 @@ type LintersSettings struct {
 	Custom map[string]CustomLinterSettings
 }
 
-
-
 type GoHeaderSettings struct {
 	Values       map[string]map[string]string `mapstructure:"values"`
 	Template     string                       `mapstructure:"template"`
