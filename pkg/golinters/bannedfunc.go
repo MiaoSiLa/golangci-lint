@@ -51,34 +51,37 @@ func linterCtx(lintCtx *linter.Context) {
 	Analyzer.Run = func(pass *analysis.Pass) (interface{}, error) {
 		// 将配置文件的 map 转成便于 AST 解析的 map
 		useMap := getUseMap(pass, configMap)
-		astf := func(node ast.Node) bool {
-			selector, ok := node.(*ast.SelectorExpr)
-			if !ok {
-				return true
-			}
-
-			ident, ok := selector.X.(*ast.Ident)
-			if !ok {
-				return true
-			}
-
-			m, ok := useMap[ident.Name]
-			if !ok {
-				return true
-			}
-
-			sel := selector.Sel
-			value, ok := m[sel.Name]
-			if !ok {
-				return true
-			}
-			pass.Reportf(node.Pos(), value)
-			return true
-		}
 		for _, f := range pass.Files {
-			ast.Inspect(f, astf)
+			ast.Inspect(f, astFunc(pass, useMap))
 		}
 		return nil, nil
+	}
+}
+
+func astFunc(pass *analysis.Pass, useMap map[string]map[string]string) func(node ast.Node) bool {
+	return func(node ast.Node) bool {
+		selector, ok := node.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+
+		ident, ok := selector.X.(*ast.Ident)
+		if !ok {
+			return true
+		}
+
+		m, ok := useMap[ident.Name]
+		if !ok {
+			return true
+		}
+
+		sel := selector.Sel
+		value, ok := m[sel.Name]
+		if !ok {
+			return true
+		}
+		pass.Reportf(node.Pos(), value)
+		return true
 	}
 }
 
