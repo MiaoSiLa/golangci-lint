@@ -13,12 +13,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Configuration represents go-header linter setup parameters
-type Configuration struct {
-	// Values is map of values. Supports two types 'const` and `regexp`. Values can be used recursively.
-	Values map[string]map[string]string `yaml:"values"`
-}
-
 var Analyzer = &analysis.Analyzer{
 	Name:     "time",
 	Doc:      "检查配置里列出的函数调用",
@@ -45,30 +39,11 @@ func NewCheckBannedFunc() *goanalysis.Linter {
 func linterCtx(lintCtx *linter.Context) {
 	// 读取配置文件
 	config := loadConfigFile()
-	// 将配置文件转成 map
-	// example:
-	// map:{
-	//   time: {
-	//     Now: 不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()
-	//   }
-	//   github.com/Missevan/missevan-go/util/time: {
-	//     TimeNow: xxxxxx
-	//   }
-	// }
+
 	configMap := configToConfigMap(config)
 
 	Analyzer.Run = func(pass *analysis.Pass) (interface{}, error) {
-		// 将配置文件的 map 转成文件下实际变量名的 map
-		// example:
-		// map:{
-		//   time: {
-		//     Now: 不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()
-		//   }
-		//   github.com/Missevan/missevan-go/util/time: {
-		//     TimeNow: xxxxxx
-		//   }
-		// }
-		useMap := getUseMap(pass, configMap)
+		useMap := getUsedMap(pass, configMap)
 		for _, f := range pass.Files {
 			ast.Inspect(f, astFunc(pass, useMap))
 		}
@@ -103,6 +78,16 @@ func astFunc(pass *analysis.Pass, useMap map[string]map[string]string) func(node
 	}
 }
 
+// configToConfigMap 将配置文件转成 map
+// example:
+// map:{
+//   time: {
+//     Now: 不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()
+//   }
+//   github.com/Missevan/missevan-go/util/time: {
+//     TimeNow: xxxxxx
+//   }
+// }
 func configToConfigMap(config configSetting) map[string]map[string]string {
 	configMap := make(map[string]map[string]string)
 	for k, v := range config.LinterSettings.Funcs {
@@ -138,7 +123,17 @@ func loadConfigFile() configSetting {
 	return config
 }
 
-func getUseMap(pass *analysis.Pass, configMap map[string]map[string]string) map[string]map[string]string {
+// getUsedMap 将配置文件的 map 转成文件下实际变量名的 map
+// example:
+// map:{
+//   time: {
+//     Now: 不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()
+//   }
+//   util: {
+//     TimeNow: xxxxxx
+//   }
+// }
+func getUsedMap(pass *analysis.Pass, configMap map[string]map[string]string) map[string]map[string]string {
 	useMap := make(map[string]map[string]string)
 	for _, item := range pass.Pkg.Imports() {
 		if m, ok := configMap[item.Path()]; ok {
