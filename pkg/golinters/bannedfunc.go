@@ -51,7 +51,7 @@ func linterCtx(lintCtx *linter.Context) {
 	}
 }
 
-func astFunc(pass *analysis.Pass, useMap map[string]map[string]string) func(node ast.Node) bool {
+func astFunc(pass *analysis.Pass, usedMap map[string]map[string]string) func(node ast.Node) bool {
 	return func(node ast.Node) bool {
 		selector, ok := node.(*ast.SelectorExpr)
 		if !ok {
@@ -63,7 +63,7 @@ func astFunc(pass *analysis.Pass, useMap map[string]map[string]string) func(node
 			return true
 		}
 
-		m, ok := useMap[ident.Name]
+		m, ok := usedMap[ident.Name]
 		if !ok {
 			return true
 		}
