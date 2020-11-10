@@ -48,9 +48,9 @@ func linterCtx(lintCtx *linter.Context) {
 	// 将配置文件转成 map
 	// example:
 	// map:{
-	// 	 time: {
-	//	   Now: 不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()
-	// 	 }
+	//   time: {
+	//     Now: 不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()
+	//   }
 	//   github.com/Missevan/missevan-go/util/time: {
 	//     TimeNow: xxxxxx
 	//   }
@@ -61,10 +61,10 @@ func linterCtx(lintCtx *linter.Context) {
 		// 将配置文件的 map 转成文件下实际变量名的 map
 		// example:
 		// map:{
-		// 	 time: {
-		//	   Now: 不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()
-		// 	 }
-		//   util: {
+		//   time: {
+		//     Now: 不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()
+		//   }
+		//   github.com/Missevan/missevan-go/util/time: {
 		//     TimeNow: xxxxxx
 		//   }
 		// }
