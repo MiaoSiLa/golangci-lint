@@ -39,73 +39,75 @@ func NewCheckTimeNow() *goanalysis.Linter {
 		"Checks that cannot use func",
 		[]*analysis.Analyzer{Analyzer},
 		nil,
-	).WithContextSetter(func(lintCtx *linter.Context) {
+	).WithContextSetter(linterCtx).WithLoadMode(goanalysis.LoadModeSyntax)
+}
 
-		wd, _ := os.Getwd()
-		f, err := ioutil.ReadFile(wd + "/.golangci.yml")
-		if err != nil {
-			panic(err)
+func linterCtx(lintCtx *linter.Context) {
+
+	wd, _ := os.Getwd()
+	f, err := ioutil.ReadFile(wd + "/.golangci.yml")
+	if err != nil {
+		panic(err)
+	}
+	var config configSetting
+	err = yaml.Unmarshal(f, &config)
+	if err != nil {
+		panic(err)
+	}
+	configMap := make(map[string]map[string]string)
+	for k, v := range config.LinterSettings.Funcs {
+		strs := strings.Split(k, ")")
+		if len(strs) != 2 {
+			continue
 		}
-		var config configSetting
-		err = yaml.Unmarshal(f, &config)
-		if err != nil {
-			panic(err)
+		if strs[0][0] != '(' || strs[1][0] != '.' {
+			continue
 		}
-		configMap := make(map[string]map[string]string)
-		for k, v := range config.LinterSettings.Funcs {
-			strs := strings.Split(k, ")")
-			if len(strs) != 2 {
-				continue
-			}
-			if strs[0][0] != '(' || strs[1][0] != '.' {
-				continue
-			}
-			var pkg, name = strs[0][1:], strs[1][1:]
-			m := configMap[pkg]
-			if m == nil {
-				m = make(map[string]string)
-			}
-			m[name] = v
-			configMap[pkg] = m
+		var pkg, name = strs[0][1:], strs[1][1:]
+		m := configMap[pkg]
+		if m == nil {
+			m = make(map[string]string)
 		}
+		m[name] = v
+		configMap[pkg] = m
+	}
 
-		Analyzer.Run = func(pass *analysis.Pass) (interface{}, error) {
-			useMap:=make(map[string]map[string]string)
-			for _,item:=range pass.Pkg.Imports(){
-				if m,ok := configMap[item.Path()];ok{
+	Analyzer.Run = func(pass *analysis.Pass) (interface{}, error) {
+		useMap:=make(map[string]map[string]string)
+		for _,item:=range pass.Pkg.Imports(){
+			if m,ok := configMap[item.Path()];ok{
 
-					useMap[item.Name()]=make(map[string]string)
-					useMap[item.Name()] = m
-				}
+				useMap[item.Name()]=make(map[string]string)
+				useMap[item.Name()] = m
 			}
-			astf := func(node ast.Node) bool {
-				selector, ok := node.(*ast.SelectorExpr)
-				if !ok {
-					return true
-				}
-
-				ident, ok := selector.X.(*ast.Ident)
-				if !ok {
-					return true
-				}
-
-				m, ok := useMap[ident.Name]
-				if !ok {
-					return true
-				}
-
-				sel := selector.Sel
-				value, ok := m[sel.Name]
-				if !ok {
-					return true
-				}
-				pass.Reportf(node.Pos(), value)
+		}
+		astf := func(node ast.Node) bool {
+			selector, ok := node.(*ast.SelectorExpr)
+			if !ok {
 				return true
 			}
-			for _, f := range pass.Files {
-				ast.Inspect(f, astf)
+
+			ident, ok := selector.X.(*ast.Ident)
+			if !ok {
+				return true
 			}
-			return nil, nil
+
+			m, ok := useMap[ident.Name]
+			if !ok {
+				return true
+			}
+
+			sel := selector.Sel
+			value, ok := m[sel.Name]
+			if !ok {
+				return true
+			}
+			pass.Reportf(node.Pos(), value)
+			return true
 		}
-	}).WithLoadMode(goanalysis.LoadModeSyntax)
+		for _, f := range pass.Files {
+			ast.Inspect(f, astf)
+		}
+		return nil, nil
+	}
 }
