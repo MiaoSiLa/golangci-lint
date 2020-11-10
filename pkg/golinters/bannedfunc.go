@@ -92,14 +92,14 @@ func astFunc(pass *analysis.Pass, usedMap map[string]map[string]string) func(nod
 func configToConfigMap(config configSetting) map[string]map[string]string {
 	configMap := make(map[string]map[string]string)
 	for k, v := range config.LinterSettings.Funcs {
-		strs := strings.Split(k, ")")
+		strs := strings.Split(k, ").")
 		if len(strs) != 2 {
 			continue
 		}
-		if strs[0][0] != '(' || strs[1][0] != '.' {
+		if strs[0][0] != '(' {
 			continue
 		}
-		var pkg, name = strs[0][1:], strs[1][1:]
+		var pkg, name = strs[0][1:], strs[1]
 		m := configMap[pkg]
 		if m == nil {
 			m = make(map[string]string)
@@ -116,8 +116,12 @@ func loadConfigFile() configSetting {
 	if err != nil {
 		panic(err)
 	}
+	return decodeFile(f)
+}
+
+func decodeFile(b []byte) configSetting {
 	var config configSetting
-	err = yaml.Unmarshal(f, &config)
+	err := yaml.Unmarshal(b, &config)
 	if err != nil {
 		panic(err)
 	}
