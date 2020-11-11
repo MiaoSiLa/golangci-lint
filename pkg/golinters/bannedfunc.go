@@ -107,10 +107,10 @@ func configToConfigMap(config configSetting) map[string]map[string]string {
 		}
 		m := configMap[pkg]
 		if m == nil {
-			m = make(map[string]string)
+			m = make(map[string]string,0)
+			configMap[pkg] = m
 		}
 		m[name] = v
-		configMap[pkg] = m
 	}
 	return configMap
 }
