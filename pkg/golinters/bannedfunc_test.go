@@ -10,7 +10,7 @@ import (
 func TestDecodeFile(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
-	var b = []byte("linters-settings:\n  bannedfunc:\n    (time).Now: \"不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()\"\n    (github.com/Missevan/missevan-go/util/time).TimeNow: \"xxxx\"")
+	b := []byte("linters-settings:\n  bannedfunc:\n    (time)." + "Now: \"xxxx\"\n    (github.com/Missevan/missevan-go/util/time).TimeNow: \"xxxx\"")
 	var setting configSetting
 	require.NotPanics(func() { setting = decodeFile(b) })
 	require.NotNil(setting.LinterSettings)
@@ -25,7 +25,7 @@ func TestDecodeFile(t *testing.T) {
 func TestConfigToConfigMap(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
-	var m = map[string]string{
+	m := map[string]string{
 		"(time).Now": "不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()",
 		"(github.com/Missevan/missevan-go/util/time).TimeNow": "xxxx",
 		"().": "(). 情况",
