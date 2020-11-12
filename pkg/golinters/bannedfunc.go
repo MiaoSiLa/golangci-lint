@@ -150,7 +150,6 @@ func getUsedMap(pass *analysis.Pass, configMap map[string]map[string]string) map
 	useMap := make(map[string]map[string]string)
 	for _, item := range pass.Pkg.Imports() {
 		if m, ok := configMap[item.Path()]; ok {
-			useMap[item.Name()] = make(map[string]string)
 			useMap[item.Name()] = m
 		}
 	}
