@@ -3,6 +3,7 @@ package golinters
 import (
 	"go/ast"
 	"go/types"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,13 +15,18 @@ func TestDecodeFile(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	b := []byte("linters-settings:\n  bannedfunc:\n    (time).Now: \"xxxx\"\n    (github.com/Missevan/missevan-go/util).TimeNow: \"xxxx\"")
+	b := strings.TrimSpace(`
+linters-settings:
+  bannedfunc:
+    (time).Now: "不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()"
+    (github.com/MiaoSiLa/missevan-go/util).TimeNow: "aaa"
+`)
 	var setting configSetting
-	require.NotPanics(func() { setting = decodeFile(b) })
+	require.NotPanics(func() { setting = decodeFile([]byte(b)) })
 	require.NotNil(setting.LinterSettings)
 	val := setting.LinterSettings.Funcs["(time).Now"]
 	assert.NotEmpty(val)
-	val = setting.LinterSettings.Funcs["(github.com/Missevan/missevan-go/util).TimeNow"]
+	val = setting.LinterSettings.Funcs["(github.com/MiaoSiLa/missevan-go/util).TimeNow"]
 	assert.NotEmpty(val)
 }
 
@@ -30,7 +36,7 @@ func TestConfigToConfigMap(t *testing.T) {
 
 	m := map[string]string{
 		"(time).Now": "不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()",
-		"(github.com/Missevan/missevan-go/util).TimeNow": "xxxx",
+		"(github.com/MiaoSiLa/missevan-go/util).TimeNow": "xxxx",
 		"().": "(). 情况",
 		").":  "). 情况",
 	}
@@ -40,9 +46,9 @@ func TestConfigToConfigMap(t *testing.T) {
 	require.NotNil(setting["time"])
 	require.NotNil(setting["time"]["Now"])
 	assert.Equal("不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()", setting["time"]["Now"])
-	require.NotNil(setting["github.com/Missevan/missevan-go/util"])
-	require.NotNil(setting["github.com/Missevan/missevan-go/util"]["TimeNow"])
-	assert.Equal("xxxx", setting["github.com/Missevan/missevan-go/util"]["TimeNow"])
+	require.NotNil(setting["github.com/MiaoSiLa/missevan-go/util"])
+	require.NotNil(setting["github.com/MiaoSiLa/missevan-go/util"]["TimeNow"])
+	assert.Equal("xxxx", setting["github.com/MiaoSiLa/missevan-go/util"]["TimeNow"])
 	assert.Nil(setting["()."])
 	assert.Nil(setting[")."])
 }
@@ -53,13 +59,13 @@ func TestGetUsedMap(t *testing.T) {
 
 	pkg := types.NewPackage("test", "test")
 	importPkg := []*types.Package{types.NewPackage("time", "time"),
-		types.NewPackage("github.com/Missevan/missevan-go/util", "util")}
+		types.NewPackage("github.com/MiaoSiLa/missevan-go/util", "util")}
 	pkg.SetImports(importPkg)
 	pass := analysis.Pass{Pkg: pkg}
 	m := map[string]map[string]string{
 		"time":                                 {"Now": "xxxx", "Date": "xxxx"},
 		"assert":                               {"New": "xxxx"},
-		"github.com/Missevan/missevan-go/util": {"TimeNow": "xxxx"},
+		"github.com/MiaoSiLa/missevan-go/util": {"TimeNow": "xxxx"},
 	}
 	usedMap := getUsedMap(&pass, m)
 	require.Len(usedMap, 2)

@@ -88,7 +88,7 @@ func astFunc(pass *analysis.Pass, usedMap map[string]map[string]string) func(nod
 //     Now: 不能使用 time.Now() 请使用 MiaoSiLa/missevan-go/util 下 TimeNow()
 //     Date: xxxx
 //   },
-//   github.com/Missevan/missevan-go/util/time: {
+//   github.com/MiaoSiLa/missevan-go/util/time: {
 //     TimeNow: xxxxxx
 //     SetTimeNow: xxxxx
 //   }
