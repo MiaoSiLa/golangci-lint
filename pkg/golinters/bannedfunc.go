@@ -63,8 +63,8 @@ func astFunc(pass *analysis.Pass, usedMap map[string]map[string]string) func(nod
 			return true
 		}
 
-		m, ok := usedMap[ident.Name]
-		if !ok {
+		m := usedMap[ident.Name]
+		if m == nil {
 			return true
 		}
 
@@ -107,7 +107,7 @@ func configToConfigMap(config configSetting) map[string]map[string]string {
 		}
 		m := configMap[pkg]
 		if m == nil {
-			m = make(map[string]string,0)
+			m = make(map[string]string, 0)
 			configMap[pkg] = m
 		}
 		m[name] = v

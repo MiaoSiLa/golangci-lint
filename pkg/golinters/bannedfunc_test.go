@@ -1,6 +1,7 @@
 package golinters
 
 import (
+	"go/ast"
 	"go/types"
 	"testing"
 
@@ -67,4 +68,35 @@ func TestGetUsedMap(t *testing.T) {
 	assert.NotEmpty(usedMap["time"]["Date"])
 	require.Len(usedMap["util"], 1)
 	assert.NotEmpty(usedMap["util"]["TimeNow"])
+}
+
+func Test_astFunc(t *testing.T) {
+	assert := assert.New(t)
+
+	// 初始化测试用参数
+	var testStr string
+	m := map[string]map[string]string{
+		"time": {"Now": "time.Now"},
+		"util": {"TimeNow": "util.TimeNow"},
+	}
+	pass := analysis.Pass{Report: func(diagnostic analysis.Diagnostic) {
+		testStr = diagnostic.Message
+	}}
+	f := astFunc(&pass, m)
+
+	// 测试不符合情况
+	node := ast.SelectorExpr{X: &ast.Ident{Name: "time"}, Sel: &ast.Ident{Name: "Date"}}
+	f(&node)
+	assert.Empty(testStr)
+	node = ast.SelectorExpr{X: &ast.Ident{Name: "assert"}, Sel: &ast.Ident{Name: "New"}}
+	f(&node)
+	assert.Empty(testStr)
+
+	// 测试符合情况
+	node = ast.SelectorExpr{X: &ast.Ident{Name: "time"}, Sel: &ast.Ident{Name: "Now"}}
+	f(&node)
+	assert.Equal("time.Now", testStr)
+	node = ast.SelectorExpr{X: &ast.Ident{Name: "util"}, Sel: &ast.Ident{Name: "TimeNow"}}
+	f(&node)
+	assert.Equal("util.TimeNow", testStr)
 }
