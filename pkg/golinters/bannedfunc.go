@@ -13,6 +13,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Analyzer lint 插件的结构体
 var Analyzer = &analysis.Analyzer{
 	Name:     "time",
 	Doc:      "检查配置里列出的函数调用",
@@ -23,6 +24,7 @@ type configSetting struct {
 	LinterSettings BandFunc `yaml:"linters-settings"`
 }
 
+// BandFunc 读取配置的结构体
 type BandFunc struct {
 	Funcs map[string]string `yaml:"bannedfunc,flow"`
 }
@@ -107,7 +109,7 @@ func configToConfigMap(config configSetting) map[string]map[string]string {
 		}
 		m := configMap[pkg]
 		if m == nil {
-			m = make(map[string]string, 0)
+			m = make(map[string]string)
 			configMap[pkg] = m
 		}
 		m[name] = v
