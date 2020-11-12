@@ -70,18 +70,18 @@ func TestGetUsedMap(t *testing.T) {
 	assert.NotEmpty(usedMap["util"]["TimeNow"])
 }
 
-func Test_astFunc(t *testing.T) {
+func TestAstFunc(t *testing.T) {
 	assert := assert.New(t)
 
 	// 初始化测试用参数
 	var testStr string
+	pass := analysis.Pass{Report: func(diagnostic analysis.Diagnostic) {
+		testStr = diagnostic.Message
+	}}
 	m := map[string]map[string]string{
 		"time": {"Now": "time.Now"},
 		"util": {"TimeNow": "util.TimeNow"},
 	}
-	pass := analysis.Pass{Report: func(diagnostic analysis.Diagnostic) {
-		testStr = diagnostic.Message
-	}}
 	f := astFunc(&pass, m)
 
 	// 测试不符合情况
