@@ -29,6 +29,7 @@ type BandFunc struct {
 	Funcs map[string]string `yaml:"bannedfunc,flow"`
 }
 
+// NewCheckBannedFunc 返回检查函数
 func NewCheckBannedFunc() *goanalysis.Linter {
 	return goanalysis.NewLinter(
 		"bannedfunc",
