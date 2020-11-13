@@ -1,6 +1,7 @@
 package golinters
 
 import (
+	"fmt"
 	"go/ast"
 	"go/types"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/analysis/analysistest"
 )
 
 func TestDecodeFile(t *testing.T) {
@@ -105,4 +107,58 @@ func TestAstFunc(t *testing.T) {
 	node = ast.SelectorExpr{X: &ast.Ident{Name: "util"}, Sel: &ast.Ident{Name: "TimeNow"}}
 	f(&node)
 	assert.Equal("util.TimeNow", testStr)
+}
+
+func TestFile(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	m := map[string]map[string]string{
+		"time":                                 {"Now": "禁止使用 time.Now", "Date": "禁止使用 time.Date"},
+		"github.com/MiaoSiLa/missevan-go/util": {"TimeNow": "禁止使用 util.TimeNow"},
+	}
+	Analyzer.Run = func(pass *analysis.Pass) (interface{}, error) {
+		useMap := getUsedMap(pass, m)
+		for _, f := range pass.Files {
+			ast.Inspect(f, astFunc(pass, useMap))
+		}
+		return nil, nil
+	}
+	// Notice: 因为配准的初始化函数将 GOPATH 设置为当前目录
+	// 所以只能 import 内置包和当前目录下的包
+	files := map[string]string{
+		"a/b.go": `package main
+
+import (
+	"fmt"
+	"log"
+	"time"
+)
+
+func main(format string, args ...interface{}) {
+	fmt.Println(time.Now())
+	_ = time.Now()
+	_ = time.Now().Unix()
+	log.Printf(format, args...)
+}
+
+`}
+	dir, cleanup, err := analysistest.WriteFiles(files)
+	require.NoError(err)
+	defer cleanup()
+	var got []string
+	want := []string{
+		`a/b.go:10:14: unexpected diagnostic: 禁止使用 time.Now`,
+		`a/b.go:11:6: unexpected diagnostic: 禁止使用 time.Now`,
+		`a/b.go:12:6: unexpected diagnostic: 禁止使用 time.Now`,
+	}
+	t2 := errorfunc(func(s string) { got = append(got, s) }) // a fake *testing.T
+	analysistest.Run(t2, dir, Analyzer, "a")
+	assert.Equal(want, got)
+}
+
+type errorfunc func(string)
+
+func (f errorfunc) Errorf(format string, args ...interface{}) {
+	f(fmt.Sprintf(format, args...))
 }
