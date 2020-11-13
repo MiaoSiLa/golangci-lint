@@ -114,7 +114,8 @@ func TestFile(t *testing.T) {
 	require := require.New(t)
 
 	m := map[string]map[string]string{
-		"time":                                 {"Now": "禁止使用 time.Now", "Date": "禁止使用 time.Date"},
+		"time": {"Now": "禁止使用 time.Now",
+			"Date": "禁止使用 time.Date", "Unix": "禁止使用 time.Unix"},
 		"github.com/MiaoSiLa/missevan-go/util": {"TimeNow": "禁止使用 util.TimeNow"},
 	}
 	Analyzer.Run = func(pass *analysis.Pass) (interface{}, error) {
@@ -131,15 +132,14 @@ func TestFile(t *testing.T) {
 
 import (
 	"fmt"
-	"log"
 	"time"
 )
 
-func main(format string, args ...interface{}) {
+func main() {
 	fmt.Println(time.Now())
 	_ = time.Now()
 	_ = time.Now().Unix()
-	log.Printf(format, args...)
+	_ = time.Unix(10000,0)
 }
 
 `}
@@ -147,13 +147,14 @@ func main(format string, args ...interface{}) {
 	require.NoError(err)
 	defer cleanup()
 	var got []string
+	t2 := errorfunc(func(s string) { got = append(got, s) }) // a fake *testing.T
+	analysistest.Run(t2, dir, Analyzer, "a")
 	want := []string{
 		`a/b.go:10:14: unexpected diagnostic: 禁止使用 time.Now`,
 		`a/b.go:11:6: unexpected diagnostic: 禁止使用 time.Now`,
 		`a/b.go:12:6: unexpected diagnostic: 禁止使用 time.Now`,
+		`a/b.go:12:6: unexpected diagnostic: 禁止使用 time.Unix`,
 	}
-	t2 := errorfunc(func(s string) { got = append(got, s) }) // a fake *testing.T
-	analysistest.Run(t2, dir, Analyzer, "a")
 	assert.Equal(want, got)
 }
 
