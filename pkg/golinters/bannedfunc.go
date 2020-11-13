@@ -6,17 +6,18 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golangci/golangci-lint/pkg/golinters/goanalysis"
-	"github.com/golangci/golangci-lint/pkg/lint/linter"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"gopkg.in/yaml.v2"
+
+	"github.com/golangci/golangci-lint/pkg/golinters/goanalysis"
+	"github.com/golangci/golangci-lint/pkg/lint/linter"
 )
 
 // Analyzer lint 插件的结构体
 var Analyzer = &analysis.Analyzer{
-	Name:     "time",
-	Doc:      "检查配置里列出的函数调用",
+	Name:     "bandfunc",
+	Doc:      "Checks that cannot use func",
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 }
 
