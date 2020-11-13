@@ -125,7 +125,7 @@ func TestFile(t *testing.T) {
 		}
 		return nil, nil
 	}
-	// Notice: 因为配准的初始化函数将 GOPATH 设置为当前目录
+	// NOTICE: 因为配准的初始化函数将 GOPATH 设置为当前目录
 	// 所以只能 import 内置包和当前目录下的包
 	files := map[string]string{
 		"a/b.go": `package main
