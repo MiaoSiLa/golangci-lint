@@ -113,11 +113,16 @@ func TestFile(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	m := map[string]map[string]string{
-		"time": {"Now": "禁止使用 time.Now",
-			"Date": "禁止使用 time.Date", "Unix": "禁止使用 time.Unix"},
-		"github.com/MiaoSiLa/missevan-go/util": {"TimeNow": "禁止使用 util.TimeNow"},
-	}
+	b := strings.TrimSpace(`
+linters-settings:
+  bannedfunc:
+    (time).Now: "禁止使用 time.Now"
+    (time).Unix: "禁止使用 time.Unix"
+`)
+	var setting configSetting
+	require.NotPanics(func() { setting = decodeFile([]byte(b)) })
+	var m map[string]map[string]string
+	m = configToConfigMap(setting)
 	Analyzer.Run = func(pass *analysis.Pass) (interface{}, error) {
 		useMap := getUsedMap(pass, m)
 		for _, f := range pass.Files {
@@ -150,9 +155,9 @@ func main() {
 	t2 := errorfunc(func(s string) { got = append(got, s) }) // a fake *testing.T
 	analysistest.Run(t2, dir, Analyzer, "a")
 	want := []string{
-		`a/b.go:10:14: unexpected diagnostic: 禁止使用 time.Now`,
+		`a/b.go:9:14: unexpected diagnostic: 禁止使用 time.Now`,
+		`a/b.go:10:6: unexpected diagnostic: 禁止使用 time.Now`,
 		`a/b.go:11:6: unexpected diagnostic: 禁止使用 time.Now`,
-		`a/b.go:12:6: unexpected diagnostic: 禁止使用 time.Now`,
 		`a/b.go:12:6: unexpected diagnostic: 禁止使用 time.Unix`,
 	}
 	assert.Equal(want, got)
